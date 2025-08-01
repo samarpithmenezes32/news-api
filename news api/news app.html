@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global News Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            light: '#3b82f6',
+                            dark: '#1e40af'
+                        },
+                        secondary: {
+                            light: '#f59e0b',
+                            dark: '#b45309'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .news-card {
+            transition: all 0.3s ease;
+        }
+        .news-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .skeleton {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-newspaper text-2xl text-primary-light dark:text-primary-dark"></i>
+                        <h1 class="text-xl font-bold text-gray-800 dark:text-white">Global News Hub</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <i class="fas fa-moon text-gray-700 dark:text-yellow-300 hidden dark:inline-block"></i>
+                            <i class="fas fa-sun text-yellow-400 dark:hidden"></i>
+                        </button>
+                        <button id="refresh-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <i class="fas fa-sync-alt text-gray-700 dark:text-gray-300"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Search and Filters -->
+                <div class="mt-4">
+                    <div class="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-2 md:space-y-0">
+                        <div class="relative flex-grow">
+                            <input type="text" id="search-input" placeholder="Search for news..." 
+                                   class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
+                            <button id="search-btn" class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-primary-light dark:hover:text-primary-dark">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex space-x-2 overflow-x-auto scrollbar-hide pb-2">
+                            <select id="country-select" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
+                                <option value="us">United States</option>
+                                <option value="gb">United Kingdom</option>
+                                <option value="ca">Canada</option>
+                                <option value="au">Australia</option>
+                                <option value="in">India</option>
+                                <option value="fr">France</option>
+                                <option value="de">Germany</option>
+                                <option value="jp">Japan</option>
+                                <option value="br">Brazil</option>
+                                <option value="za">South Africa</option>
+                            </select>
+                            
+                            <select id="category-select" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-light dark:focus:ring-primary-dark">
+                                <option value="general">General</option>
+                                <option value="business">Business</option>
+                                <option value="entertainment">Entertainment</option>
+                                <option value="health">Health</option>
+                                <option value="science">Science</option>
+                                <option value="sports">Sports</option>
+                                <option value="technology">Technology</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-grow container mx-auto px-4 py-6">
+            <!-- Loading Skeleton -->
+            <div id="loading-skeleton" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="skeleton bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden h-80"></div>
+                <div class="skeleton bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden h-80"></div>
+                <div class="skeleton bg-gray-200 dark:bg-gray-700 rounded-lg overflow-hidden h-80 hidden lg:block"></div>
+            </div>
+            
+            <!-- News Grid -->
+            <div id="news-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+                <!-- News cards will be inserted here by JavaScript -->
+            </div>
+            
+            <!-- No Results Message -->
+            <div id="no-results" class="hidden text-center py-12">
+                <i class="fas fa-newspaper text-5xl text-gray-400 mb-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-300">No news found</h2>
+                <p class="text-gray-500 dark:text-gray-400 mt-2">Try adjusting your search or filters</p>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="error-message" class="hidden text-center py-12">
+                <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-300">Failed to load news</h2>
+                <p class="text-gray-500 dark:text-gray-400 mt-2" id="error-text">Please try again later</p>
+                <button id="retry-btn" class="mt-4 px-4 py-2 bg-primary-light dark:bg-primary-dark text-white rounded-lg hover:bg-opacity-90 transition">
+                    Retry
+                </button>
+            </div>
+            
+            <!-- Load More Button -->
+            <div id="load-more-container" class="mt-8 text-center hidden">
+                <button id="load-more-btn" class="px-6 py-3 bg-primary-light dark:bg-primary-dark text-white rounded-lg hover:bg-opacity-90 transition font-medium">
+                    Load More News
+                </button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white dark:bg-gray-800 py-6 border-t border-gray-200 dark:border-gray-700">
+            <div class="container mx-auto px-4 text-center">
+                <p class="text-gray-600 dark:text-gray-400">
+                    &copy; 2023 Global News Hub. Powered by <a href="https://newsapi.org/" target="_blank" class="text-primary-light dark:text-primary-dark hover:underline">NewsAPI</a>
+                </p>
+                <div class="flex justify-center space-x-4 mt-4">
+                    <a href="#" class="text-gray-500 hover:text-primary-light dark:hover:text-primary-dark">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="text-gray-500 hover:text-primary-light dark:hover:text-primary-dark">
+                        <i class="fab fa-facebook"></i>
+                    </a>
+                    <a href="#" class="text-gray-500 hover:text-primary-light dark:hover:text-primary-dark">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_KEY = 'ce0f35c908664e329facbce4e5a0b973';
+        let currentPage = 1;
+        let currentCountry = 'us';
+        let currentCategory = 'general';
+        let currentSearchQuery = '';
+        
+        // DOM Elements
+        const newsContainer = document.getElementById('news-container');
+        const loadingSkeleton = document.getElementById('loading-skeleton');
+        const noResults = document.getElementById('no-results');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const retryBtn = document.getElementById('retry-btn');
+        const loadMoreContainer = document.getElementById('load-more-container');
+        const loadMoreBtn = document.getElementById('load-more-btn');
+        const searchInput = document.getElementById('search-input');
+        const searchBtn = document.getElementById('search-btn');
+        const countrySelect = document.getElementById('country-select');
+        const categorySelect = document.getElementById('category-select');
+        const refreshBtn = document.getElementById('refresh-btn');
+        const themeToggle = document.getElementById('theme-toggle');
+        
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load initial news
+            fetchNews();
+            
+            // Set up event listeners
+            searchBtn.addEventListener('click', handleSearch);
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') handleSearch();
+            });
+            
+            countrySelect.addEventListener('change', () => {
+                currentCountry = countrySelect.value;
+                currentPage = 1;
+                fetchNews();
+            });
+            
+            categorySelect.addEventListener('change', () => {
+                currentCategory = categorySelect.value;
+                currentPage = 1;
+                fetchNews();
+            });
+            
+            refreshBtn.addEventListener('click', () => {
+                currentPage = 1;
+                fetchNews();
+            });
+            
+            retryBtn.addEventListener('click', () => {
+                fetchNews();
+            });
+            
+            loadMoreBtn.addEventListener('click', () => {
+                currentPage += 1;
+                fetchNews(true);
+            });
+            
+            // Theme toggle
+            if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+            
+            themeToggle.addEventListener('click', () => {
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            });
+        });
+        
+        // Handle search
+        function handleSearch() {
+            currentSearchQuery = searchInput.value.trim();
+            currentPage = 1;
+            fetchNews();
+        }
+        
+        // Fetch news from API
+        async function fetchNews(append = false) {
+            try {
+                // Show loading state
+                if (!append) {
+                    newsContainer.classList.add('hidden');
+                    loadingSkeleton.classList.remove('hidden');
+                    noResults.classList.add('hidden');
+                    errorMessage.classList.add('hidden');
+                    loadMoreContainer.classList.add('hidden');
+                }
+                
+                let url;
+                if (currentSearchQuery) {
+                    url = `https://newsapi.org/v2/everything?q=${encodeURIComponent(currentSearchQuery)}&page=${currentPage}&apiKey=${API_KEY}`;
+                } else {
+                    url = `https://newsapi.org/v2/top-headlines?country=${currentCountry}&category=${currentCategory}&page=${currentPage}&apiKey=${API_KEY}`;
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    if (data.articles.length === 0 && currentPage === 1) {
+                        showNoResults();
+                    } else {
+                        displayNews(data.articles, append);
+                        
+                        // Show load more button if there are more articles
+                        if (data.totalResults > currentPage * 20) {
+                            loadMoreContainer.classList.remove('hidden');
+                        } else {
+                            loadMoreContainer.classList.add('hidden');
+                        }
+                    }
+                } else {
+                    throw new Error(data.message || 'Failed to fetch news');
+                }
+            } catch (error) {
+                console.error('Error fetching news:', error);
+                showError(error.message);
+            } finally {
+                if (!append) {
+                    loadingSkeleton.classList.add('hidden');
+                }
+            }
+        }
+        
+        // Display news articles
+        function displayNews(articles, append) {
+            if (!append) {
+                newsContainer.innerHTML = '';
+                newsContainer.classList.remove('hidden');
+            }
+            
+            articles.forEach(article => {
+                const newsCard = createNewsCard(article);
+                newsContainer.appendChild(newsCard);
+            });
+        }
+        
+        // Create a news card element
+        function createNewsCard(article) {
+            const card = document.createElement('div');
+            card.className = 'news-card bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 flex flex-col h-full';
+            
+            // Format date
+            const publishedAt = new Date(article.publishedAt);
+            const formattedDate = publishedAt.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            card.innerHTML = `
+                <div class="relative h-48 overflow-hidden">
+                    ${article.urlToImage ? 
+                        `<img src="${article.urlToImage}" alt="${article.title}" class="w-full h-full object-cover">` : 
+                        `<div class="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            <i class="fas fa-newspaper text-4xl text-gray-400"></i>
+                        </div>`}
+                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                        <span class="text-xs text-white bg-primary-light dark:bg-primary-dark px-2 py-1 rounded-full">${article.source.name}</span>
+                    </div>
+                </div>
+                <div class="p-4 flex-grow flex flex-col">
+                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 line-clamp-2">${article.title}</h3>
+                    <p class="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-3">${article.description || 'No description available'}</p>
+                    <div class="mt-auto">
+                        <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-3">
+                            <i class="far fa-clock mr-1"></i>
+                            <span>${formattedDate}</span>
+                        </div>
+                        <a href="${article.url}" target="_blank" rel="noopener noreferrer" class="block w-full text-center py-2 bg-primary-light dark:bg-primary-dark text-white rounded-lg hover:bg-opacity-90 transition font-medium">
+                            Read More
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        // Show no results message
+        function showNoResults() {
+            newsContainer.classList.add('hidden');
+            noResults.classList.remove('hidden');
+            loadMoreContainer.classList.add('hidden');
+        }
+        
+        // Show error message
+        function showError(message) {
+            newsContainer.classList.add('hidden');
+            errorText.textContent = message || 'Please try again later';
+            errorMessage.classList.remove('hidden');
+            loadMoreContainer.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
