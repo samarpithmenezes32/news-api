@@ -276,7 +276,6 @@
             
             <div class="controls">
                 <button class="filter-btn active" data-filter="all">All News</button>
-                <button class="filter-btn" data-filter="politics">Politics</button>
                 <button class="filter-btn" data-filter="business">Business</button>
                 <button class="filter-btn" data-filter="technology">Technology</button>
                 <button class="filter-btn" data-filter="sports">Sports</button>
@@ -306,123 +305,67 @@
     </div>
 
     <script>
-        // Sample news data structure
-        const countries = {
-            'USA': { flag: '🇺🇸', name: 'United States' },
-            'UK': { flag: '🇬🇧', name: 'United Kingdom' },
-            'Germany': { flag: '🇩🇪', name: 'Germany' },
-            'France': { flag: '🇫🇷', name: 'France' },
-            'Japan': { flag: '🇯🇵', name: 'Japan' },
-            'China': { flag: '🇨🇳', name: 'China' },
-            'India': { flag: '🇮🇳', name: 'India' },
-            'Brazil': { flag: '🇧🇷', name: 'Brazil' },
-            'Australia': { flag: '🇦🇺', name: 'Australia' },
-            'Canada': { flag: '🇨🇦', name: 'Canada' },
-            'Russia': { flag: '🇷🇺', name: 'Russia' },
-            'Italy': { flag: '🇮🇹', name: 'Italy' },
-            'Spain': { flag: '🇪🇸', name: 'Spain' },
-            'Mexico': { flag: '🇲🇽', name: 'Mexico' },
-            'South Korea': { flag: '🇰🇷', name: 'South Korea' }
-        };
-
-        const categories = ['politics', 'business', 'technology', 'sports', 'entertainment', 'health'];
-        
-        const newsTemplates = {
-            politics: [
-                "Parliament discusses new legislative measures",
-                "Election results show significant changes",
-                "International diplomatic talks continue",
-                "Government announces policy reforms",
-                "Opposition party calls for immediate action"
-            ],
-            business: [
-                "Stock market shows volatile trading patterns",
-                "Major corporation announces expansion plans",
-                "Economic indicators point to growth",
-                "New trade agreements signed",
-                "Cryptocurrency market experiences fluctuations"
-            ],
-            technology: [
-                "Revolutionary AI breakthrough announced",
-                "New smartphone technology unveiled",
-                "Cybersecurity concerns raise alerts",
-                "Tech giant launches innovative platform",
-                "Sustainable technology solutions emerge"
-            ],
-            sports: [
-                "Championship match draws millions of viewers",
-                "Star athlete breaks long-standing record",
-                "Team announces surprising trade deal",
-                "Olympic preparations intensify",
-                "Local team advances to playoffs"
-            ],
-            entertainment: [
-                "Award ceremony celebrates outstanding talent",
-                "Blockbuster movie breaks box office records",
-                "Popular TV series announces final season",
-                "Music festival attracts international artists",
-                "Celebrity couple announces engagement"
-            ],
-            health: [
-                "Medical research shows promising results",
-                "Health officials issue important guidelines",
-                "New treatment method proves effective",
-                "Wellness program launches nationwide",
-                "Public health campaign gains momentum"
-            ]
-        };
-
         let newsData = [];
-        let currentFilter = 'all';
-        let newsCounter = 0;
+        let currentFilter = 'general';
 
-        // Generate random news
-        function generateRandomNews() {
-            const countryKeys = Object.keys(countries);
-            const randomCountry = countryKeys[Math.floor(Math.random() * countryKeys.length)];
-            const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-            const templates = newsTemplates[randomCategory];
-            const randomTemplate = templates[Math.floor(Math.random() * templates.length)];
-            
-            const isBreaking = Math.random() < 0.15; // 15% chance of breaking news
-            
-            return {
-                id: ++newsCounter,
-                country: randomCountry,
-                category: randomCategory,
-                title: randomTemplate,
-                content: `Latest developments from ${countries[randomCountry].name}. This story is developing and we will continue to provide updates as more information becomes available. Stay tuned for comprehensive coverage.`,
-                timestamp: new Date(),
-                isBreaking: isBreaking,
-                source: `${randomCountry} News Network`
-            };
+        // Fetch news from API
+        async function fetchNews(category = 'general') {
+            try {
+                // Show loading state
+                document.getElementById('newsGrid').innerHTML = '<div style="text-align: center; padding: 40px; color: white; grid-column: 1/-1;">Loading news...</div>';
+                
+                const response = await fetch(`/api/news?category=${category}&country=us`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch news');
+                }
+                
+                const data = await response.json();
+                
+                if (data.articles && data.articles.length > 0) {
+                    newsData = data.articles.map((article, index) => ({
+                        id: index,
+                        title: article.title,
+                        content: article.description || article.content || 'No description available',
+                        source: article.source.name,
+                        timestamp: new Date(article.publishedAt),
+                        url: article.url,
+                        imageUrl: article.urlToImage,
+                        category: category
+                    }));
+                    renderNews();
+                } else {
+                    document.getElementById('newsGrid').innerHTML = '<div style="text-align: center; padding: 40px; color: white; grid-column: 1/-1;">No news available</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching news:', error);
+                document.getElementById('newsGrid').innerHTML = '<div style="text-align: center; padding: 40px; color: white; grid-column: 1/-1;">Error loading news. Please check your API configuration.</div>';
+            }
         }
 
         // Render news cards
         function renderNews() {
             const grid = document.getElementById('newsGrid');
-            const filteredNews = currentFilter === 'all' 
-                ? newsData 
-                : newsData.filter(news => news.category === currentFilter);
             
-            grid.innerHTML = filteredNews.map(news => `
-                <div class="news-card ${news.isBreaking ? 'breaking-news' : ''}" style="animation-delay: ${Math.random() * 0.5}s">
+            grid.innerHTML = newsData.map(news => `
+                <div class="news-card" style="animation-delay: ${Math.random() * 0.5}s">
                     <div class="news-header">
                         <div>
-                            <span class="country-flag">${countries[news.country].flag}</span>
-                            <span class="country-name">${countries[news.country].name}</span>
+                            <span class="country-flag">🌍</span>
+                            <span class="country-name">World News</span>
                         </div>
                         <div>
-                            ${news.isBreaking ? '<span class="breaking-badge">BREAKING</span>' : ''}
-                            <span class="category-tag">${news.category.toUpperCase()}</span>
+                            <span class="category-tag">${(news.category || 'general').toUpperCase()}</span>
                         </div>
                     </div>
+                    ${news.imageUrl ? `<img src="${news.imageUrl}" alt="${news.title}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px; margin: 10px 0;" onerror="this.style.display='none'">` : ''}
                     <div class="news-title">${news.title}</div>
                     <div class="news-content">${news.content}</div>
                     <div class="news-meta">
                         <span class="source">${news.source}</span>
                         <span class="timestamp">${formatTimestamp(news.timestamp)}</span>
                     </div>
+                    ${news.url ? `<a href="${news.url}" target="_blank" style="display: inline-block; margin-top: 10px; color: #667eea; text-decoration: none; font-weight: 600;">Read more →</a>` : ''}
                 </div>
             `).join('');
             
@@ -443,7 +386,7 @@
         // Update statistics
         function updateStats() {
             document.getElementById('totalNews').textContent = newsData.length;
-            document.getElementById('countriesCount').textContent = new Set(newsData.map(n => n.country)).size;
+            document.getElementById('countriesCount').textContent = '195';
             document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
         }
 
@@ -453,35 +396,30 @@
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentFilter = btn.dataset.filter;
-                renderNews();
+                
+                // Map filter names to API category names
+                const categoryMap = {
+                    'all': 'general',
+                    'politics': 'general',
+                    'entertainment': 'entertainment',
+                    'technology': 'technology',
+                    'business': 'business',
+                    'sports': 'sports',
+                    'health': 'health'
+                };
+                
+                fetchNews(categoryMap[currentFilter] || 'general');
             });
         });
 
-        // Add new news periodically
-        function addRandomNews() {
-            const newNews = generateRandomNews();
-            newsData.unshift(newNews); // Add to beginning
-            
-            // Keep only latest 50 news items
-            if (newsData.length > 50) {
-                newsData = newsData.slice(0, 50);
-            }
-            
-            renderNews();
-        }
-
-        // Initialize with some news
+        // Initialize
         function initialize() {
-            // Generate initial news
-            for (let i = 0; i < 12; i++) {
-                newsData.push(generateRandomNews());
-            }
-            renderNews();
+            fetchNews('general');
             
-            // Add new news every 8-15 seconds
+            // Refresh news every 5 minutes
             setInterval(() => {
-                addRandomNews();
-            }, Math.random() * 7000 + 8000);
+                fetchNews(currentFilter === 'all' ? 'general' : currentFilter);
+            }, 300000);
         }
 
         // Start the app
